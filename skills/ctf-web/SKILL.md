@@ -1,6 +1,6 @@
 ---
 name: ctf-web
-description: Provides web exploitation techniques for CTF challenges. Use when solving web security challenges involving XSS, SQLi, SSTI, SSRF, CSRF, XXE, file upload bypasses, JWT attacks, prototype pollution, path traversal, command injection, LaTeX injection, request smuggling, DOM clobbering, Web3/blockchain, authentication bypass, SAML exploitation, OAuth/OIDC, open redirect chains, subdomain takeover, or CI/CD credential theft.
+description: Web exploitation: SQLi, XSS, SSTI, SSRF, CSRF, XXE, JWT, OAuth/OIDC, SAML, prototype pollution, file-upload/path-traversal, HTTP smuggling, cache poisoning, Web3/Solidity, auth/parser differentials. Dispatch on manifest + framework signals.
 license: MIT
 compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access for tool installation.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
@@ -14,19 +14,18 @@ Quick reference for web CTF challenges. Each technique has a one-liner here; see
 
 ## Additional Resources
 
-- [server-side.md](server-side.md) - Core server-side injection attacks: SQLi (including EXIF metadata injection, keyword fragmentation bypass, MySQL column truncation, DNS record injection), SSTI, SSRF (Host header, DNS rebinding), XXE, command injection, LaTeX injection RCE, code injection (Ruby/Perl/Python/Prolog), ReDoS, file upload→RCE, eval bypass, PHP type juggling, PHP file inclusion / php://filter, PHP extract() variable overwrite, PHP preg_replace /e RCE, SSTI `__dict__.update()` quote bypass, ERB SSTI Sequel bypass, Thymeleaf SpEL SSTI + Spring FileCopyUtils WAF bypass, XPath blind injection
-- [server-side-deser.md](server-side-deser.md) - Deserialization and execution attacks: Java deserialization (ysoserial gadget chains, JNDI injection, blind detection), Python pickle RCE (`__reduce__`, restricted unpickler bypass, STOP opcode chaining), race conditions (TOCTOU async exploits, double-spend, coupon reuse)
-- [server-side-advanced.md](server-side-advanced.md) - Advanced server-side techniques: ExifTool CVE-2021-22204, Go rune/byte mismatch, zip symlink traversal, path traversal bypasses (brace stripping, double URL encoding, os.path.join, %2f), Flask/Werkzeug debug mode, XXE external DTD filter bypass, WeasyPrint SSRF, MongoDB regex injection, Pongo2 Go template injection, ZIP PHP webshell, basename() bypass, React Server Components Flight RCE (CVE-2025-55182), SSRF→Docker API RCE chain, Castor XML xsi:type deserialization (Atlas HTB), Apache ErrorDocument expression file read (Zero HTB), SQLite file path traversal to bypass string equality
-- [server-side-advanced-2.md](server-side-advanced-2.md) - 2025-2026 era server-side mechanics: JWT base64-strict-false smuggling + NFKD fold (hxp 38C3), Go shared `err` TOCTOU (hxp 38C3), Vite proto-pollution → `spawn_sync` RCE (SekaiCTF 2025), NFS file-handle forgery (hxp 38C3), JS `String.replace` single-match traversal (idekCTF 2025), HQL → H2 `CREATE ALIAS` → jshell JDWP (SekaiCTF 2025), WP `wp_ajax_nopriv_*` option-update privesc (HTB Uni 2025), ORM type-confusion + zipslip + worker poison (HTB Uni 2025), Firebird `ALTER DB DIFFERENCE FILE` → webshell (HTB Biz 2025), TAR/ELF polyglot upload-to-RCE (HTB Biz 2025), S3 presigned-URL path traversal (HTB Biz 2025)
-- [client-side.md](client-side.md) - Client-side attacks: XSS, CSRF, CSPT, cache poisoning, DOM tricks, React input filling, hidden elements, XS-Leak timing oracle, GraphQL CSRF, Unicode case folding XSS bypass (long-s U+017F), CSS font glyph container query exfiltration, Hyperscript CDN CSP bypass, PBKDF2 prefix timing oracle, client-side HMAC bypass via leaked JS secret
-- [auth-and-access.md](auth-and-access.md) - Auth/authz attacks: password inference, weak validation, client-side gates, NoSQL auth bypass, HAProxy/Express.js bypass, IDOR on WIP endpoints, HTTP TRACE method bypass, LLM/AI chatbot jailbreak, open redirect chains (OAuth token theft), subdomain takeover, Apache mod_status info disclosure + session forging
-- [auth-and-access-2.md](auth-and-access-2.md) - 2025-2026 era auth/access: PHP `parse_url` vs `readfile` double-colon host divergence (Midnightflag 2025), Next.js Next-Action header + trustHostHeader SSRF chain (FCSC 2025), race on shared token Map between Node workers (HTB Uni 2025), Chrome extension DNR → CDP → Puppeteer config.js RCE (FCSC 2025)
-- [auth-jwt.md](auth-jwt.md) - JWT/JWE token attacks: algorithm none, RS256→HS256 confusion, weak secret, unverified signature, JWK/JKU header injection, KID path traversal, balance replay, JWE forgery with exposed public key
-- [auth-infra.md](auth-infra.md) - Infrastructure auth: OAuth/OIDC exploitation (redirect_uri bypass, token manipulation, state CSRF), CORS misconfiguration, git history credential leakage, CI/CD variable theft, identity provider API takeover (authentik/Keycloak), SAML SSO flow automation, Guacamole parameter extraction, login page poisoning, TeamCity REST API RCE
-- [node-and-prototype.md](node-and-prototype.md) - Node.js: prototype pollution, VM sandbox escape, Happy-DOM chain, flatnest CVE, Lodash+Pug AST injection
-- [web3.md](web3.md) - Blockchain/Web3: Solidity exploits, proxy patterns, ABI encoding tricks, transient storage clearing collision (0.8.28-0.8.33), Foundry tooling
-- [cves.md](cves.md) - CVE-specific exploits: Next.js middleware bypass, curl credential leak, Uvicorn CRLF, urllib scheme bypass, ExifTool DjVu, broken auth, AAEncode/JJEncode, protocol multiplexing, React Server Components Flight RCE (CVE-2025-55182), Ruby-SAML XPath digest smuggling (CVE-2024-45409, Barrier HTB), PaperCut NG auth bypass + RCE (CVE-2023-27350, Bamboo HTB), Zabbix blind SQLi (CVE-2024-22120, Watcher HTB)
-
+- [server-side.md](server-side.md) — SQLi, SSTI, SSRF, XXE, cmdinj, file-upload, PHP tricks, Thymeleaf/ERB/Jinja
+- [server-side-deser.md](server-side-deser.md) — Java ysoserial, Python pickle, race conditions (TOCTOU, double-spend)
+- [server-side-advanced.md](server-side-advanced.md) — ExifTool CVE, zip symlink, path bypass, Flask debug, Castor XML, React Flight
+- [server-side-advanced-2.md](server-side-advanced-2.md) — 2025-2026: JWT-strict=false, Go err TOCTOU, Vite RCE, NFS, HQL→jshell, Firebird, polyglot
+- [client-side.md](client-side.md) — XSS, CSRF, CSPT, cache-poisoning, DOM, xs-leaks, PBKDF2 timing
+- [auth-and-access.md](auth-and-access.md) — NoSQL bypass, parser diffs, IDOR, LLM jailbreak, subdomain takeover
+- [auth-and-access-2.md](auth-and-access-2.md) — 2025-2026: PHP parse_url, Next.js Next-Action SSRF, token-Map race, DNR→CDP chain
+- [auth-jwt.md](auth-jwt.md) — JWT alg none, RS256→HS256, JWK/JKU, KID traversal, JWE forgery
+- [auth-infra.md](auth-infra.md) — OAuth/OIDC, CORS, CI/CD theft, SAML, TeamCity RCE, git history leaks
+- [node-and-prototype.md](node-and-prototype.md) — prototype pollution, VM escape, Happy-DOM, flatnest
+- [web3.md](web3.md) — Solidity, proxies, ABI tricks, Foundry, transient-storage collision
+- [cves.md](cves.md) — Next.js middleware, urllib scheme, ExifTool DjVu, Ruby-SAML XPath, PaperCut
 ---
 
 ## Pattern Recognition Index

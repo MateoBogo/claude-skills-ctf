@@ -1,6 +1,6 @@
 ---
 name: ctf-automation
-description: Orchestrator that triages a CTF challenge directory in one command. Fingerprints binaries (file/checksec/readelf/rabin2/strings), detects language deps (package.json, requirements.txt, go.mod, Cargo.toml, pyproject.toml), finds crypto artefacts (.pem, model files, .weights.h5, *.qasm, *.circom, *.halo2), finds forensics artefacts (.pcap, .sr, .raw, IQ complex*, .evtx, memdump), and emits a JSON+markdown report pointing directly at the relevant Pattern Recognition Index sections in ctf-*/SKILL.md. Also provides per-category setup scripts: pwnsetup.sh (libc.rip + patchelf + pwntools template), cryptosetup.py (RSA/ECDSA/lattice detection + SageMath preload), websetup.sh (ffuf/httpx/katana/nuclei chain w/ JSON output), foreniq.sh (GQRX/sox/multimon-ng chain + pulseview wrapper), aiprobe.py (LLM endpoint probe — argv injection, DNS rebind, language-gap, metadata exfil).
+description: Orchestrator for CTF triage: fingerprint binaries, detect manifests (package.json/Cargo/go.mod/foundry.toml), find crypto/forensics/AI artefacts, emit JSON+markdown dispatch pointers into ctf-*/SKILL.md PRI. Bundles pwnsetup/cryptosetup/websetup/foreniq/aiprobe scripts.
 license: MIT
 compatibility: Requires bash, Python 3, jq. Optional: checksec, rabin2, patchelf, ffuf, httpx, katana, nuclei, subfinder, multimon-ng, sox, pulseview, sagemath. Missing-tool detection prints exact install command instead of crashing.
 allowed-tools: Bash Read Write Edit Glob Grep

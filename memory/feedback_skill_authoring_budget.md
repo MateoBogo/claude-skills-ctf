@@ -29,6 +29,19 @@ Keep skills cheap to load. SKILL.md auto-loads on every invocation — treat it 
    - [ ] if snippet is < 15 lines of code, put it in the section body; else link to quickref.md or a standalone helper script under the skill directory
    - [ ] never add to SKILL.md outside the PRI row
 
-7. **Measuring before a release:** `wc -c SKILL.md` divided by 4 ≈ tokens. Target < 2.5k tokens per SKILL.md. If over, find a quickref to extract.
+7. **Measuring before a release:** `wc -c SKILL.md` divided by 4 ≈ tokens. Target < 2k tokens per SKILL.md and < 300 chars per description. If over, attack in this order: (a) tighten description to mechanics-only, (b) collapse Additional Resources to 1-line-per-file, (c) extract inline code/cheatsheets to quickref.md.
 
-Reference snapshot: `project_ctf_skills_refresh_round2_2026-04-22.md` has the pre/post table of this refactor.
+8. **Additional Resources must be one line per file.** Format: `- [file.md](file.md) — <60-char purpose>`. Multi-paragraph descriptions here duplicate the PRI table (which already dispatches) and inflate SKILL.md by 34-51 %. Eliminate ruthlessly.
+
+9. **Descriptions enumerate mechanics, not technique names.** Writing "House of Water / Tangerine / Apple 2 / Rust / Corrosion / …" costs 400 chars; "glibc heap (House-of-*, leakless, FSOP)" costs 50 and matches the same auto-invoke triggers. Lists of proper nouns are waste.
+
+Reference snapshot: `project_ctf_skills_refresh_round2_2026-04-22.md` has the pre/post table of the initial round 2 refactor. After a round-3 optimization pass the numbers were:
+
+| Budget bucket                         | Before initial | After round 2 | After round 3 |
+|---------------------------------------|----------------|---------------|---------------|
+| Descriptions (ALWAYS loaded)          | 1394 tok       | 1394 tok      | **608 tok**   |
+| SKILL.md bodies (loaded on invoke)    | 48 000 tok     | 19 000 tok    | **11 763 tok**|
+| Largest single SKILL.md               | 9 326 tok      | 2 782 tok     | **1 907 tok** |
+| quickref.md (on-demand only, 10 skills) | n/a          | 29 500 tok    | 32 930 tok    |
+
+Round-3 moves that produced the savings: tighten descriptions (-56 %), collapse Additional Resources to 1-line-per-file (-40 % of SKILL.md body), extract remaining inline content from ctf-app-system / ctf-malware / ctf-osint into their own quickref.md.

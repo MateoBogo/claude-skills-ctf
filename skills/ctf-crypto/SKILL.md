@@ -1,6 +1,6 @@
 ---
 name: ctf-crypto
-description: Provides cryptography attack techniques for CTF challenges. Use when attacking encryption, hashing, signatures, ZKP, PRNG, or mathematical crypto problems involving RSA, AES, ECC, lattices, LWE, CVP, number theory, Coppersmith, Pollard, Wiener, padding oracle, GCM, key derivation, or stream/block cipher weaknesses.
+description: Cryptography CTF attacks: RSA, AES, ECC, PRNG, hash length-extension, padding oracles, lattice/LWE/CVP, HNP, Coppersmith, Pollard, Wiener, ZKP/Circom/halo2, post-quantum KEM. Dispatch on prime shape, oracle type, or scheme artefact.
 license: MIT
 compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access for tool installation.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
@@ -14,16 +14,15 @@ Quick reference for crypto CTF challenges. Each technique has a one-liner here; 
 
 ## Additional Resources
 
-- [classic-ciphers.md](classic-ciphers.md) - Classic ciphers: Vigenere (+ Kasiski examination), Atbash, substitution wheels, XOR variants (+ multi-byte frequency analysis), deterministic OTP, cascade XOR, book cipher, OTP key reuse / many-time pad, variable-length homophonic substitution
-- [modern-ciphers.md](modern-ciphers.md) - Modern cipher attacks: AES (CFB-8, ECB leakage), CBC-MAC/OFB-MAC, padding oracle, S-box collisions, GF(2) elimination, LCG partial output recovery, CBC padding oracle (full block decryption), Bleichenbacher RSA PKCS#1 v1.5 padding oracle (ROBOT), birthday attack / meet-in-the-middle, LFSR stream cipher attacks (Berlekamp-Massey, correlation attack), CRC32 collision signature forgery, Blum-Goldwasser bit-extension oracle, hash length extension, compression oracle (CRIME-style), RC4 second-byte bias
-- [rsa-attacks.md](rsa-attacks.md) - RSA attacks: small e (cube root), common modulus, Wiener's, Pollard's p-1, Hastad's broadcast, Fermat/consecutive primes, multi-prime, restricted-digit, Coppersmith structured primes, Manger oracle, polynomial hash, RSA p=q validation bypass, cube root CRT gcd(e,phi)>1, factoring from phi(n) multiple, multiplicative homomorphism signature forgery
-- [ecc-attacks.md](ecc-attacks.md) - ECC attacks: small subgroup, invalid curve, Smart's attack (anomalous, with Sage code), fault injection, clock group DLP, Pohlig-Hellman, ECDSA nonce reuse, Ed25519 torsion side channel
-- [zkp-and-advanced.md](zkp-and-advanced.md) - ZKP/graph 3-coloring, Z3 solver guide, garbled circuits, Shamir SSS, bigram constraint solving, race conditions, Groth16 broken setup, DV-SNARG forgery, KZG pairing oracle for permutation recovery
-- [prng.md](prng.md) - PRNG attacks (MT19937, MT float recovery via GF(2) magic matrix for token prediction, LCG, GF(2) matrix PRNG, V8 XorShift128+ Math.random state recovery via Z3, middle-square, deterministic RNG hill climbing, random-mode oracle, time-based seeds, C srand/rand synchronization via ctypes, password cracking, logistic map chaotic PRNG)
-- [historical.md](historical.md) - Historical ciphers (Lorenz SZ40/42, book cipher implementation)
-- [advanced-math.md](advanced-math.md) - Advanced mathematical attacks (isogenies, Pohlig-Hellman, LLL, Coppersmith, quaternion RSA, GF(2)[x] CRT, S-box collision code, LWE lattice CVP attack, affine cipher over non-prime modulus)
-- [exotic-crypto.md](exotic-crypto.md) - Exotic algebraic structures (braid group DH / Alexander polynomial, monotone function inversion, tropical semiring residuation)
-
+- [classic-ciphers.md](classic-ciphers.md) — Vigenere/Kasiski, XOR variants, OTP reuse, homophonic
+- [modern-ciphers.md](modern-ciphers.md) — AES/CBC/GCM, padding oracle, Bleichenbacher, LFSR, length extension
+- [rsa-attacks.md](rsa-attacks.md) — small e/d, common mod, Wiener, Hastad, Fermat, Coppersmith, Manger, polynomial-prime
+- [ecc-attacks.md](ecc-attacks.md) — invalid curve, Smart's, Pohlig-Hellman, ECDSA nonce, genus-1 variety
+- [zkp-and-advanced.md](zkp-and-advanced.md) — Groth16/PLONK/halo2/Noir ZK, Z3, SSS, LogUp/ProtoStar
+- [prng.md](prng.md) — MT19937, LCG, V8 XorShift128+, middle-square, Legendre bit oracle
+- [historical.md](historical.md) — Lorenz SZ40, book cipher
+- [advanced-math.md](advanced-math.md) — CVP/Babai, LLL, Coppersmith, HNP, Hill off-by-one, Joux, GEA LFSR
+- [exotic-crypto.md](exotic-crypto.md) — braid-group DH, tropical, ePrint scheme killers, CSIDH sign-leak, PQ (Kyber/UOV)
 ---
 
 ## Pattern Recognition Index

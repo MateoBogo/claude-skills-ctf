@@ -1,6 +1,6 @@
 ---
 name: ctf-forensics
-description: Provides digital forensics and signal analysis techniques for CTF challenges. Use when analyzing disk images, memory dumps, event logs, network captures, cryptocurrency transactions, steganography, PDF analysis, Windows registry, Volatility, PCAP, Docker images, coredumps, side-channel power traces, DTMF audio spectrograms, packet timing analysis, or recovering deleted files and credentials.
+description: Digital forensics: disk/memory images (Volatility), PCAP + network steganography, Windows event logs & registry, side-channel power/EM traces, RF/SDR/DTMF/POCSAG decode, logic-analyzer (sigrok), image/audio stego, cryptocurrency tracing. Dispatch on file magic.
 license: MIT
 compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access for tool installation.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
@@ -14,16 +14,15 @@ Quick reference for forensics CTF challenges. Each technique has a one-liner her
 
 ## Additional Resources
 
-- [3d-printing.md](3d-printing.md) - 3D printing forensics (PrusaSlicer binary G-code, QOIF, heatshrink)
-- [windows.md](windows.md) - Windows forensics (registry, SAM, event logs, recycle bin, USN journal, PowerShell history, Defender MPLog, WMI persistence, Amcache)
-- [network.md](network.md) - Network forensics basics (tcpdump, TLS/SSL keylog decryption, TLS master key extraction from coredump, Wireshark, PCAP, port scanning, SMB3 decryption, 5G/NR protocols, WordPress recon, credentials, USB HID steno, BCD encoding, HTTP file upload exfiltration, split archive reassembly via timestamp ordering)
-- [network-advanced.md](network-advanced.md) - Advanced network forensics (packet interval timing encoding, USB HID mouse/pen drawing recovery, NTLMv2 hash cracking, TCP flag covert channel, DNS last-byte steganography, DNS trailing byte binary encoding, multi-layer PCAP with XOR + ZIP and mDNS key, Brotli decompression bomb seam analysis, SMB RID recycling via LSARPC, Timeroasting MS-SNTP hash extraction)
-- [disk-and-memory.md](disk-and-memory.md) - Disk/memory forensics (Volatility, disk mounting/carving, VM/OVA/VMDK, coredumps, deleted partitions, ZFS, VMware snapshots, ransomware analysis, GPT GUID encoding, VMDK sparse parsing, APFS snapshot recovery, Windows KAPE triage, WordPerfect macro XOR extraction, minidump ISO 9660 recovery, RAID 5 XOR recovery, Android forensics, Docker container forensics, cloud storage forensics)
-- [steganography.md](steganography.md) - Image steganography (binary border stego, PDF multi-layer stego, SVG keyframes, PNG reorder, file overlays, JPEG unused DQT table LSB, BMP bitplane QR extraction, image puzzle reassembly, F5 JPEG DCT ratio detection, PNG unused palette entry stego, QR code tile reconstruction, seed-based pixel permutation + multi-bitplane QR, JPEG thumbnail pixel-to-text mapping, conditional LSB with pixel filtering, GIF frame diff Morse code, GZSteg + spammimic)
-- [stego-advanced.md](stego-advanced.md) - Advanced steganography (FFT frequency domain, DTMF audio, SSTV+LSB, custom frequency dual-tone keypad, multi-track audio differential subtraction, cross-channel multi-bit LSB, audio FFT musical notes, audio metadata octal encoding, nested tar whitespace encoding, audio waveform binary encoding, audio spectrogram hidden QR, video frame accumulation, reversed audio)
-- [linux-forensics.md](linux-forensics.md) - Linux/app forensics (log analysis, Docker image forensics, attack chains, browser credentials, Firefox history, TFTP, TLS weak RSA, USB audio, Git directory recovery, KeePass v4 cracking, Git reflog/fsck squash recovery, browser artifact analysis (Chrome/Chromium/Firefox history, cookies, downloads, local storage, session restore), corrupted git blob repair via byte brute-force)
-- [signals-and-hardware.md](signals-and-hardware.md) - Hardware signal decoding with decode code (VGA frame parsing, HDMI TMDS symbol decode, DisplayPort 8b/10b + LFSR descrambler), Voyager Golden Record audio, Saleae Logic 2 UART decode, Flipper Zero .sub files, side-channel power analysis (DPA), keyboard acoustic side-channel, POCSAG pager decoding, IQ FFT masking, PulseView I2C+datasheet workflow, op-amp flash ADC recovery
-
+- [3d-printing.md](3d-printing.md) — PrusaSlicer G-code, QOIF, heatshrink
+- [windows.md](windows.md) — registry, SAM, event logs, Amcache, WMI persistence, MPLog
+- [network.md](network.md) — tcpdump, TLS keylog, SMB3 decrypt, USB HID steno, split-archive reassembly
+- [network-advanced.md](network-advanced.md) — packet-timing, NTLMv2, DNS stego, SMB RID recycle, UA-gated C2 hex-XOR
+- [disk-and-memory.md](disk-and-memory.md) — Volatility, VMDK/VHD/APFS, ZFS, RAID5 XOR, Docker/cloud forensics
+- [steganography.md](steganography.md) — image stego: LSB, DQT, QR reassembly, seed-permuted, F5 JPEG
+- [stego-advanced.md](stego-advanced.md) — FFT audio, DTMF/SSTV, multi-track diff, video frame accum
+- [linux-forensics.md](linux-forensics.md) — log analysis, Docker image, browser artifacts, git recovery, KeePass v4
+- [signals-and-hardware.md](signals-and-hardware.md) — VGA/HDMI/DP decode, POCSAG, PulseView I²C, flash ADC, DPA
 ---
 
 ## Pattern Recognition Index
