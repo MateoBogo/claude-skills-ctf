@@ -1,0 +1,36 @@
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python caches (shouldn't exist but just in case)
+__pycache__/
+*.pyc
+*.pyo
+
+# Anything that looks sensitive
+*.credentials*
+*.env
+.env.*
+*.pem
+*.key
+secrets.*
+*.secret
+
+# Local triage / scratch output
+.ctf-triage.json
+.ctf-triage.md
+exploit.log
+*.patched
+
+# Skill internal trace (we keep _round2_additions.md though)
+*.tmp
+*.bak
+
+# node / go / rust stuff if anything lands here
+node_modules/
+target/
+go.sum
