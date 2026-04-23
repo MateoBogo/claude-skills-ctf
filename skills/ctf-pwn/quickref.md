@@ -359,3 +359,4 @@ Format string leak defeats ASLR. SEH (Structured Exception Handler) overwrite wi
 ## Useful Commands
 
 `checksec`, `one_gadget`, `ropper`, `ROPgadget`, `seccomp-tools dump`, `strings libc | grep GLIBC`. See [rop-advanced.md](rop-advanced.md) for full command list and pwntools template.
+

@@ -15,10 +15,12 @@ Quick reference for web CTF challenges. Each technique has a one-liner here; see
 ## Additional Resources
 
 - [server-side.md](server-side.md) — SQLi, SSTI, SSRF, XXE, cmdinj, file-upload, PHP tricks, Thymeleaf/ERB/Jinja
+- [server-side-2.md](server-side-2.md) — 2024-26: Jinja2 __dict__ quote bypass, Thymeleaf SpEL + FileCopyUtils WAF
 - [server-side-deser.md](server-side-deser.md) — Java ysoserial, Python pickle, race conditions (TOCTOU, double-spend)
 - [server-side-advanced.md](server-side-advanced.md) — ExifTool CVE, zip symlink, path bypass, Flask debug, Castor XML, React Flight
 - [server-side-advanced-2.md](server-side-advanced-2.md) — 2025-2026: JWT-strict=false, Go err TOCTOU, Vite RCE, NFS, HQL→jshell, Firebird, polyglot
 - [client-side.md](client-side.md) — XSS, CSRF, CSPT, cache-poisoning, DOM, xs-leaks, PBKDF2 timing
+- [client-side-2.md](client-side-2.md) — 2025-26: Math.random-salt same-origin iframe collision (content-sandbox escape)
 - [auth-and-access.md](auth-and-access.md) — NoSQL bypass, parser diffs, IDOR, LLM jailbreak, subdomain takeover
 - [auth-and-access-2.md](auth-and-access-2.md) — 2025-2026: PHP parse_url, Next.js Next-Action SSRF, token-Map race, DNR→CDP chain
 - [auth-jwt.md](auth-jwt.md) — JWT alg none, RS256→HS256, JWK/JKU, KID traversal, JWE forgery
@@ -40,7 +42,7 @@ Dispatch on **observed signals**, not challenge titles.
 | Node `mysql`/`mysql2` + `.query(q, req.body)` without explicit `String()` coercion | Operator-object injection + `__proto__` pollution → auth-and-access.md |
 | Custom HTML sanitizer using `createNodeIterator`/`TreeWalker` then `innerHTML` | Declarative Shadow DOM bypass (`<template shadowrootmode>`) → auth-and-access.md |
 | Vyper `< 0.3.x` with `@nonreentrant("lock")` on multiple funcs sharing storage, external call hook on path | Cross-function lock scope bug → auth-and-access.md |
-| L1/L2 bridge storing `(token, amount)` on deposit but minting a canonical asset on withdraw | Ledger state-desync → auth-and-access.md, web3.md |
+| L1/L2 bridge storing `(token, amount)` on deposit but minting a canonical asset on withdraw | Ledger state-desync → auth-and-access-2.md, web3.md |
 | Object in `req.body` treated as password or filter criterion (`{"$gt":""}`, `{"$ne":null}`) | NoSQL auth bypass → auth-and-access.md |
 | Template rendering user input in Jinja2 / Twig / Freemarker / ERB | SSTI → server-side.md |
 | `jwt.decode` without `verify=True`, or RS256 keys reachable at `/pubkey.pem` | RS256 → HS256 confusion → auth-jwt.md |
@@ -68,10 +70,14 @@ Dispatch on **observed signals**, not challenge titles.
 | API returns presigned S3 URL + bucket allows ListBucket | Path traversal in presign parameter → server-side-advanced-2.md |
 | Chromium ≥ 123 target + CSP allows inline style + admin bot iframe | CSS `@starting-style`/slow-selector crash oracle → client-side.md |
 | Admin bot + cross-origin iframe + Chromium | xs-leak via `performance.memory` delta → client-side.md |
+| Content-sandbox iframe where per-item origin derives from `Math.random().toString(36)` + parent posts `{body, salt}` | Salt-prediction chain → same-origin XSS → client-side-2.md |
 | Solidity `private` state vars + live RPC URL | `eth_getStorageAt` slot enumeration → web3.md |
 | Contract validates `extcodesize` once then `CALL`s stored addr + CREATE2 deploy allowed | SELFDESTRUCT+CREATE2 code-swap → web3.md |
 | RPC exposes `txpool_content` / `eth_pendingTransactions` | Mempool snoop / front-run → web3.md |
 | `nonReentrant` on one function, sibling shares storage without guard | Cross-function reentrancy → web3.md |
+| `foundry.toml` + `test/` with `invariant_*()` / `statefulFuzz_*()` / `StdInvariant` import | Foundry invariant fuzzing → web3.md#foundry-invariant |
+| Solidity contract with bounded loops + assertable invariant + Halmos installable | Halmos symbolic check → web3.md#halmos |
+| Two contracts with identical external interface (`FooV1.sol` / `FooV2.sol`, `Safe.sol` / `Optimized.sol`) | Differential fuzzing → web3.md#differential-fuzzing |
 
 Recognize the **mechanic** first. Never dispatch on the challenge's name.
 

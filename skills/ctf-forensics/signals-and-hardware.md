@@ -421,3 +421,50 @@ Raw value = 6 (4-bit)
 **Spot signal:** schematic with N ≈ 2^k - 1 op-amps sharing a common input node and distinct reference taps from a resistor ladder; Arduino sketch that reads a parallel port and looks it up in a small ROM table.
 
 **Datasheet tie-in:** LM339 / LM393 (quad comparators) are the dead giveaway. MAX152 / MAX1106 are integrated 8-bit flash ADCs that follow the same math if the challenge uses an IC instead of discrete op-amps.
+
+## TVLA / Welch-t Leakage Assessment (source: ChipWhisperer + modern side-channel CTFs)
+
+**Trigger:** power/EM traces provided; challenge asks "does this implementation leak" or gives two trace-sets (fixed-key vs random-key, or fixed-plaintext vs random-plaintext).
+**Signals:** `.npy` / `.bin` / `.trs` file with N × T samples; filename mentions `fixed_vs_random`, `tvla`, `key_t`, `key_r`; README references Goodwill et al. NIST TVLA methodology.
+**Mechanic:** Welch's *t*-test per time sample — if `|t| > 4.5` for any sample, the set pair is leaking at 99.999 % confidence. Sample-complexity scales as `O(SNR^-2)`, so a clean 10k-trace set often wins where 1k fails.
+
+```python
+import numpy as np
+# traces_f, traces_r : np.ndarray, shape (N_traces, N_samples)
+def welch_t(a, b):
+    ma, mb = a.mean(0), b.mean(0)
+    va, vb = a.var(0, ddof=1), b.var(0, ddof=1)
+    return (ma - mb) / np.sqrt(va / a.shape[0] + vb / b.shape[0])
+t = welch_t(traces_f, traces_r)
+leak_idx = np.where(np.abs(t) > 4.5)[0]     # time samples that leak
+```
+
+**Second-order:** center each trace (subtract mean), square, then re-run Welch — catches masked implementations where first-order TVLA is flat but the variance still leaks.
+
+**CPA after TVLA:** once leakage localised, pivot to Correlation Power Analysis (Pearson ρ between hypothesis Hamming-weight(sbox output) and trace value). Libraries: `scared`, `lascar`, `estraces`.
+
+## Morphology-Over-Duration Side-Channel (source: 404CTF 2024 Sea Side Channel + CSIDH)
+
+**Trigger:** implementation uses "constant-time" APIs (`memcmp_ct`, `mpz_powm_sec`) yet leaks; traces have equal **length** but visibly different **shape** under a microscope.
+**Signals:** waveforms all same length → naive timing attack fails; challenge provides a scope capture at ≥ 100 MS/s per op.
+**Mechanic:** don't compare total time — compare per-window morphology (min, max, mean, autocorrelation, FFT bins) in a sliding window of 1-10 ops. Cluster by k-means on the 4D feature vector. The two clusters correspond to the two secret-bit values. Effective on CSIDH isogeny chains, constant-time Curve25519 ladders with subnormal paths, and SM2 / SM9 Chinese curves.
+
+## CPA on AES-TinyAES / MBED Hamming-Weight
+
+**Trigger:** traces labelled with known plaintexts; target is AES-128 first round; platform STM32 / ATMega.
+**Signal:** 5000-10000 traces, 10-50k samples each, plaintext in a separate `.npy`.
+**Mechanic:** CPA on Hamming weight of `sbox(p ⊕ k)` for each byte position:
+
+```python
+from scipy.stats import pearsonr
+hw = bytes.fromhex("0001010201020203…" * 32)  # precomputed HW of 0..255
+def cpa(traces, plaintexts, byte_pos):
+    correlations = np.zeros((256, traces.shape[1]))
+    for k in range(256):
+        h = np.array([hw[AES_SBOX[p[byte_pos] ^ k]] for p in plaintexts])
+        correlations[k] = np.array([pearsonr(h, traces[:, t])[0]
+                                    for t in range(traces.shape[1])])
+    return correlations.max(1).argmax()  # best key guess
+```
+
+Expect one key byte in < 1s on 10k traces; loop over 16 byte positions.

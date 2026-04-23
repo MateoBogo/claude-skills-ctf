@@ -18,8 +18,10 @@ Quick reference for forensics CTF challenges. Each technique has a one-liner her
 - [windows.md](windows.md) — registry, SAM, event logs, Amcache, WMI persistence, MPLog
 - [network.md](network.md) — tcpdump, TLS keylog, SMB3 decrypt, USB HID steno, split-archive reassembly
 - [network-advanced.md](network-advanced.md) — packet-timing, NTLMv2, DNS stego, SMB RID recycle, UA-gated C2 hex-XOR
-- [disk-and-memory.md](disk-and-memory.md) — Volatility, VMDK/VHD/APFS, ZFS, RAID5 XOR, Docker/cloud forensics
-- [steganography.md](steganography.md) — image stego: LSB, DQT, QR reassembly, seed-permuted, F5 JPEG
+- [disk-and-memory.md](disk-and-memory.md) — Volatility, VMDK/VHD, RAID5 XOR, PowerShell ransomware, Docker/cloud
+- [disk-and-memory-2.md](disk-and-memory-2.md) — 2024-26: ZFS, GPT GUID, KAPE, APFS snapshots, ransomware key recovery
+- [steganography.md](steganography.md) — image stego: LSB, binary border, JPEG thumbnail, GIF differential
+- [steganography-2.md](steganography-2.md) — 2024-26: PDF, PNG chunks, JPEG DQT, F5, jigsaw, QR tiles, seed-permuted
 - [stego-advanced.md](stego-advanced.md) — FFT audio, DTMF/SSTV, multi-track diff, video frame accum
 - [linux-forensics.md](linux-forensics.md) — log analysis, Docker image, browser artifacts, git recovery, KeePass v4
 - [signals-and-hardware.md](signals-and-hardware.md) — VGA/HDMI/DP decode, POCSAG, PulseView I²C, flash ADC, DPA
@@ -44,8 +46,12 @@ Dispatch on **observed file types / byte signals**, not challenge titles.
 | Audio WAV with sync spikes or steady tones | Spectrogram / DTMF / SSTV → stego-advanced.md |
 | PNG/JPEG/BMP with suspicious size or LSB patterns | Image stego → steganography.md |
 | `.git/` directory fragment / dangling blob | Git reflog / fsck / blob repair → linux-forensics.md |
+| Tarball from `docker save` + `.git/objects/??/…` files present but refs/HEAD damaged | Raw `zlib_decode` of every object → disk-and-memory-2.md |
 | RAID disks with one missing, equal-size members | RAID5 XOR recovery → disk-and-memory.md |
 | PCAP where only a specific User-Agent gets non-default responses + hex-looking paths | UA-gated C2 URL-path hex-XOR exfil → network-advanced.md |
+| Two trace-sets labelled `fixed_vs_random` / `key_t` vs `key_r` / NIST-TVLA README | Welch's *t*-test leakage check → signals-and-hardware.md#tvla |
+| Constant-time code + traces of equal length but visibly different shape | Morphology-over-duration clustering → signals-and-hardware.md#morphology |
+| AES first-round target, 5k-10k traces with known plaintexts (`.npy` + plaintexts) | CPA on `sbox(p ⊕ k)` Hamming weight → signals-and-hardware.md#cpa |
 
 Recognize **artefacts and bytes**, not names. If the file type matches, the section applies regardless of challenge title.
 

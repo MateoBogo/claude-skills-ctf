@@ -17,10 +17,12 @@ Quick reference for RE challenges. For detailed techniques, see supporting files
 - [tools.md](tools.md) — GDB, Ghidra, radare2, IDA, Binary Ninja, Unicorn, WASM, pyc, packed
 - [tools-dynamic.md](tools-dynamic.md) — Frida, angr, lldb, x64dbg, Qiling, Triton, Pin instruction-counting
 - [tools-advanced.md](tools-advanced.md) — VMProtect/Themida, BinDiff, D-810/GOOMBA, TTF GSUB, AVX2 Z3 lift
+- [tools-advanced-2.md](tools-advanced-2.md) — 2025-26: GB-scale PE Unicorn+angr hybrid (VirtualProtect-gated unpackers)
 - [anti-analysis.md](anti-analysis.md) — Linux/Windows anti-debug, anti-VM, anti-DBI, MBA, self-hashing
 - [patterns.md](patterns.md) — custom VMs, nanomites, LLVM obfuscation, S-box, SECCOMP/BPF, multi-thread
 - [patterns-ctf.md](patterns-ctf.md) — comp patterns part 1: hidden opcodes, LD_PRELOAD, GBA MITM, maze kmod
 - [patterns-ctf-2.md](patterns-ctf-2.md) — part 2: multi-layer brute, CVP integer, decision-tree, perf oracle, VM misident
+- [patterns-ctf-3.md](patterns-ctf-3.md) — 2025-26: genetic algorithm / hill-climb over opaque additive scoring
 - [languages.md](languages.md) — Python bytecode, pyarmor, UEFI, esolangs, HarmonyOS, Godot, Electron
 - [languages-compiled.md](languages-compiled.md) — Go (GoReSym), Rust, Swift, Kotlin/JVM, C++ vtables, .pyc forgery
 - [platforms.md](platforms.md) — Mach-O, iOS jailbreak, embedded firmware, kernel drivers, game engines, CAN
@@ -53,6 +55,8 @@ Dispatch on **observable binary features**, not challenge titles.
 | `bpftool prog list` shows non-standard eBPF prog | eBPF FSM syscall-sequence decomp → languages-compiled.md (+ ctf-pwn/sandbox-escape.md) |
 | TTF/OTF with abnormally dense GSUB; glyphs named `hex_*`/`one`/`zero` | GSUB ligature stego DAG reverse → tools-advanced.md |
 | AVX2 `vpaddb`/`vpshufb` in tight loop over input | Lane-wise Z3 lifting → tools-advanced.md |
+| PE ≥ 500 MB, multiple `VirtualProtect(...,RWX)` + inline decrypt + `call/jmp rax` after each | Unicorn layer-graph + per-layer angr solve → tools-advanced-2.md |
+| Flat chain of hundreds of `if (input[i] op const) score += kN`; win if `score >= THR` | Separability probe → hill-climb → GA → patterns-ctf-3.md |
 
 Recognize the **artefact or opcode pattern**. The title is noise.
 

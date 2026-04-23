@@ -464,3 +464,50 @@ for (int i = 0; i < 1000; i++) {
 **Mechanic:** gift a user page through pipe→socket via `vm_insert_page`, which bypasses `can_map_frag`'s reverse-mapping check; kernel maps the same physical page read-write into both the proxy's and the attacker's VMA. Between the proxy's header validation and forwarding step, flip bytes cross-process with no syscall. Effective as a "kernel-assisted TOCTOU" where conventional thread races are too slow.
 **Hardening hint:** hunt for missing `unmap_and_move` on gifted pages in any zero-copy path.
 Source: [hxp.io/blog/123/hxp-39C3-CTF-folly](https://hxp.io/blog/123/hxp-39C3-CTF-folly/).
+
+## eBPF Verifier Bypass — Pointer Arithmetic Mis-Tracking (source: CVE-2024-1086 / CVE-2022-23222 family)
+
+**Trigger:** kernel has `net.core.bpf_jit_enable=1` and unpriv BPF may be available; challenge exposes a `bpf(2)` syscall wrapper or a sandbox runs untrusted BPF bytecode.
+**Signals:** `/proc/sys/kernel/unprivileged_bpf_disabled = 0`; `bpf_prog_load` reachable; kernel 5.13-6.5 range (pre CVE-2024-1086 patches).
+**Mechanic:** craft a program that tricks the verifier into believing a pointer has type `SCALAR_VALUE` when it's actually `PTR_TO_MAP_VALUE` (or vice-versa). The classic pattern:
+```
+r1 = (map pointer)
+r2 = r1 + 0                    # verifier tracks r2 = PTR_TO_MAP_VALUE
+if (some_cond) r2 = 0          # dead branch, but verifier widens type
+r3 = *(u64*)(r2 + 8)          # verifier now thinks r2 is scalar, allows it
+```
+The runtime type is still a pointer → arbitrary kernel R/W once primitives chained. Escalate via `modprobe_path` overwrite or `core_pattern` pipe.
+
+**Counter-grep:** look for `BPF_ALU64_IMM` and `BPF_MOV64_REG` sequences where the verifier state would lose precision. Tools: `bpftool prog dump xlated` shows the verifier-believed types.
+
+## eBPF `BPF_MAP_TYPE_RINGBUF` Kernel-Leak Primitive
+
+**Trigger:** sandbox allows ringbuf output but not arbitrary pointers; kernel ≥ 5.8.
+**Signals:** `BPF_MAP_TYPE_RINGBUF` in program maps; `bpf_ringbuf_output()` call reachable.
+**Mechanic:** when outputting user-controlled data to a ringbuf, recent kernels didn't scrub stale padding bytes. A carefully sized record inherits bytes from kernel stack or adjacent ringbuf slots → slow but reliable KASLR leak. Pair with a verifier bypass for full R/W.
+
+## eBPF as Offensive Telemetry (bypass detection)
+
+**Trigger:** red-team scenario; attacker is root on target; needs fileless persistence.
+**Signals:** CO-RE (`libbpf`) installed; `bpftool` available; `/sys/kernel/btf/vmlinux` present.
+**Mechanic:** load a kprobe on `sys_execve` / `tcp_sendmsg` that modifies arguments in-kernel (with `bpf_probe_write_user` on old kernels, or using uprobe `BPF_PROG_TYPE_KPROBE` with RET). No userspace process persists; `bpftool prog list` is the only trace. Use `BPF_PROG_TYPE_LSM` on ≥ 5.7 to *prevent* other processes from seeing the evidence.
+
+## eBPF FSM Syscall-Sequence Gate (source: pwn.college AoP 2025 — existing section cross-ref)
+
+See `sandbox-escape.md#ebpf-fsm-syscall-sequence-gate`. When BPF is USED as a sandbox (not a target), the FSM transitions are the attack surface — race the state transition with a sibling thread.
+
+## eBPF Tooling
+
+- **libbpf-bootstrap**: minimal skeletons for CO-RE programs; includes `bootstrap.c` template.
+- **bpftool prog dump xlated**: verifier's view of the IR (what the verifier thinks each register is).
+- **bpftool prog dump jited**: actual JITed native code; useful to confirm a verifier bypass produced the expected machine code.
+- **ebpf-verifier** (Linux source `tools/testing/selftests/bpf/`): run the verifier standalone.
+- **GDB kernel** + `bpftool` live: set `break __bpf_prog_run` and inspect `BPF_PROG_CTX_INFO`.
+
+## Pattern Recognition Index additions (add to ctf-pwn/SKILL.md)
+
+| Signal | Technique → file |
+|---|---|
+| `unprivileged_bpf_disabled=0` + kernel 5.13-6.5 + `bpf_prog_load` reachable | eBPF verifier pointer-arith bypass → kernel-advanced.md |
+| `BPF_MAP_TYPE_RINGBUF` + kernel < 5.15 | Ringbuf stale-byte KASLR leak → kernel-advanced.md |
+| Root+`libbpf-bootstrap` demanded; fileless persistence challenge | Offensive eBPF kprobe hooks → kernel-advanced.md |

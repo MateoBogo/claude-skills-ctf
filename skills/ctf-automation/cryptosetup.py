@@ -39,7 +39,7 @@ def scan(root: pathlib.Path):
             if {"n", "e"} & set(hits) or "modulus" in hits:
                 out["rsa"].append({"file": str(p), "sample": hits})
         r_count = len(list(ECDSA_SIG.finditer(data)))
-        if r_count >= 4 and b"ecdsa" in data.lower() or b"secp" in data.lower():
+        if r_count >= 4 and (b"ecdsa" in data.lower() or b"secp" in data.lower()):
             out["ecdsa"].append({"file": str(p), "pairs_approx": r_count // 2})
         if LATTICE_KEYS.search(data) and p.suffix in {".py", ".sage", ".txt", ".json"}:
             out["lattice"].append(str(p))

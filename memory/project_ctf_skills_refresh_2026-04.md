@@ -2,6 +2,7 @@
 name: CTF skills refresh — 404CTF / Root-Me / top CTFs 2024-2026
 description: Summary of research done on 2026-04-22 that enriched ctf-* skill files with recent techniques
 type: project
+originSessionId: 9d467641-4764-48fa-87e3-59464c21abb5
 ---
 On 2026-04-22, ran a multi-agent web research pass over 404CTF (2022-2025), Root-Me (blog + community writeups), and top CTFs 2024-2026 (DEFCON, Google, PlaidCTF, SekaiCTF, LACTF, RealWorldCTF, corCTF, HackTheAgent, LakeCTF). Updated skill files in `/home/ubuntu/.claude/skills/ctf-*/`:
 

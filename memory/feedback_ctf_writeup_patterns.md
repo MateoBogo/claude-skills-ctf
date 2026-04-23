@@ -2,6 +2,7 @@
 name: CTF writeup-pattern shortcuts for 2024-2026 competitions
 description: High-leverage pattern recognisers to try early on modern CTF challenges
 type: feedback
+originSessionId: 9d467641-4764-48fa-87e3-59464c21abb5
 ---
 Cross-cutting patterns extracted from 404CTF / Root-Me / DEF CON / Google / PlaidCTF / SekaiCTF / HackTheAgent writeups (2024-2026). Try these *before* diving into category-specific deep dives.
 

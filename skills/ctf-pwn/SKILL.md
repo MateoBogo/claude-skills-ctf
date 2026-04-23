@@ -19,6 +19,7 @@ Quick reference for binary exploitation (pwn) CTF challenges. Each technique has
 - [rop-advanced.md](rop-advanced.md) — SROP, RETF arch-switch, .fini_array, ret2vdso, stack pivot
 - [format-string.md](format-string.md) — fmt leaks, GOT/hook overwrite, blind fmt, argv[0] tricks
 - [advanced.md](advanced.md) — heap/UAF classics (House of Orange/Spirit/Lore), ret2dlresolve, JIT
+- [advanced-2.md](advanced-2.md) — 2024-26: House of Apple 2 (glibc 2.34+), House of Einherjar, musl meta-pointer
 - [advanced-exploits.md](advanced-exploits.md) — 2024 era: GC UAF, VM bugs, FSOP+seccomp, custom sandboxes
 - [advanced-exploits-2.md](advanced-exploits-2.md) — 2024-early-2025: io_uring SQE inj, TLS dtor, MOP, corphone
 - [advanced-exploits-3.md](advanced-exploits-3.md) — 2025-2026: vkfs FS, MIPS $gp, alloca, ObjC, ARM64 PAC, cmp timing
@@ -29,6 +30,8 @@ Quick reference for binary exploitation (pwn) CTF challenges. Each technique has
 - [kernel-bypass.md](kernel-bypass.md) — KASLR/FGKASLR, KPTI, SMEP/SMAP, exploit delivery
 - [kernel-advanced.md](kernel-advanced.md) — EntryBleed, SLUBStick, DirtyCred, folly page-aliasing
 - [brop.md](brop.md) — Blind ROP full chain without binary access
+- [browser-jit.md](browser-jit.md) — V8/SpiderMonkey/JSC JIT type-confusion, sandbox bypass, OSR-exit
+- [rust-pwn.md](rust-pwn.md) — Rust unwind drop, transmute, set_len uninit, async state confusion
 ---
 
 ## Pattern Recognition Index
@@ -43,11 +46,11 @@ Map **observable signals** (not challenge names) to the right technique. Scan th
 | `printf(user_ptr)` with no format string | Format-string leak + GOT overwrite → format-string.md |
 | glibc 2.32+ tcache with Safe-Linking; no leaks possible | House of Rust / Water → heap-leakless.md |
 | glibc 2.39+, no `free()` primitive exposed | House of Tangerine (malloc-only AAW) → heap-leakless.md |
-| `mmap(MAP_FIXED)` exposed with controllable `addr`, `prot` | MOP — libc code-page zeroing → advanced-exploits-2.md |
+| `mmap(MAP_FIXED)` exposed with controllable `addr`, `prot` | MOP — libc code-page zeroing → advanced-exploits-3.md |
 | Fork/clone + tiny shared-mem handshake validating input char-by-char | strace byte-count side-channel → advanced-exploits-2.md |
-| Kernel chall, unpriv userns, `splice()`/`vmsplice()` + large kmalloc free | Pipe-backed folio_put page-UAF → advanced-exploits-2.md |
-| Container with custom bind-mounts on `/dev`, `/proc` under runc ≤ 1.1.x | runc 2025 symlink-race escape → advanced-exploits-2.md |
-| Unicorn/QEMU sandbox with host-side helper reads | Host/guest hook divergence → advanced-exploits-2.md |
+| Kernel chall, unpriv userns, `splice()`/`vmsplice()` + large kmalloc free | Pipe-backed folio_put page-UAF → advanced-exploits-3.md |
+| Container with custom bind-mounts on `/dev`, `/proc` under runc ≤ 1.1.x | runc 2025 symlink-race escape → advanced-exploits-3.md |
+| Unicorn/QEMU sandbox with host-side helper reads | Host/guest hook divergence → advanced-exploits-3.md |
 | Kernel io_uring SQE reachable via UAF / type confusion | io_uring worker abuse → kernel-advanced.md, advanced-exploits-2.md |
 | KASLR + Linux ≥ 5.8 + prefetch available | EntryBleed → kernel-advanced.md |
 | Windows driver IOCTL + NT kernel | PreviousMode / token stealing → kernel-advanced.md, advanced-exploits-2.md |
@@ -67,6 +70,17 @@ Map **observable signals** (not challenge names) to the right technique. Scan th
 | setuid binary scrubs secret after `read`, coredumps reachable | Coredump race → sandbox-escape.md |
 | Non-standard eBPF prog on kprobe, flag gated by global state | eBPF FSM syscall-sequence → sandbox-escape.md |
 | Traefik ≤ 2.11.13 front + Flask/Node admin routes | `X-Forwarded-*` reach → polyglot chain → advanced-exploits-3.md |
+| `d8` / `js` / `jsc` binary + `*.patch` modifying JIT compiler sources | JIT type confusion → browser-jit.md |
+| V8 build with `v8_enable_sandbox=true`; primitive only inside cage | ExternalPointerTable bypass → browser-jit.md |
+| Turbofan typer patch touching `Type::Range` / `Type::OtherNumber` | Range-analysis type confusion → browser-jit.md |
+| IonMonkey `RangeAnalysis.cpp` diff or JSC `DFGSpeculativeJIT.cpp` diff | OSR-exit / range bug → browser-jit.md |
+| Rust panic caught + recovered with unsafe state between | Unwind-path `Drop` corruption → rust-pwn.md |
+| `mem::transmute` / `slice::from_raw_parts_mut` on user-controlled len | Sliced-length OOB → rust-pwn.md |
+| `Vec::reserve(n)` + `set_len(n)` without n writes | Uninitialised-drop vtable hijack → rust-pwn.md |
+| `as u32` / `as usize` on subtraction result in release build | Truncation overflow → rust-pwn.md |
+| `async fn` with `Pin<&mut Self>` across `.await` + raw-ptr aliasing | Future state-machine confusion → rust-pwn.md |
+| `unprivileged_bpf_disabled=0` + kernel 5.13-6.5 + `bpf_prog_load` reachable | eBPF verifier pointer-arith bypass → kernel-advanced.md |
+| `BPF_MAP_TYPE_RINGBUF` + kernel < 5.15 | Ringbuf stale-byte KASLR leak → kernel-advanced.md |
 
 Recognize the **mechanic** first. The challenge title is never the signal.
 

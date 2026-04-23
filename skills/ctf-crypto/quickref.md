@@ -166,3 +166,4 @@ See [prng.md](prng.md#logistic-map--chaotic-prng-seed-recovery-bypass-ctf-2025) 
 - **SageMath:** `sage -python script.py` (required for ECC, Coppersmith, lattice attacks)
 - **RsaCtfTool:** `python RsaCtfTool.py -n <n> -e <e> --uncipher <c>` — automated RSA attack suite (tries Wiener, Hastad, Fermat, Pollard, and many more)
 - **quipqiup.com:** Automated substitution cipher solver (frequency + word pattern analysis)
+

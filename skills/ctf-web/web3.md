@@ -324,3 +324,56 @@ cast storage "$ADDR" 0 --rpc-url "$RPC"   # foundry one-liner
 **Trigger:** `nonReentrant` modifier on `withdraw()`; sibling function `flashAction()` shares the same balance mapping but is **not** guarded and calls target before state update.
 **Signals:** two external functions touching the same storage slot; only one has the modifier; CEI order wrong in the unguarded one.
 **Mechanic:** attack from the unguarded path — reenter through it while `withdraw` lock doesn't apply (different selector). Drain the shared mapping. Fix: modifier must cover every external function touching shared state.
+
+## Foundry Invariant Fuzzing Discovery (source: 2025-2026 web3 CTFs + Echidna/Foundry workflows)
+
+**Trigger:** challenge ships `foundry.toml` + `test/` with functions named `invariant_*()`, `statefulFuzz_*()`, or files matching `Invariant*.t.sol`.
+**Signals:** `[invariant]` block in `foundry.toml`; `StdInvariant` import; `targetContract()` / `targetSelector()` helpers.
+**Mechanic:** these are property-based fuzzers — the challenge authors often *add* invariants that the challenge contract should preserve; your job is to find a calldata sequence violating one. Run `forge test --mt invariant_ -vvvv`; Foundry prints the failing sequence as `[FAIL] invariant_total_supply_constant() (runs: 256, calls: 15000, reverts: 0)` plus the replay steps. Tune:
+- `runs = 1000`, `depth = 50` (default 256/15 is too shallow for deep state).
+- `fail_on_revert = false` catches invariants that break only during revert-adjacent states.
+- `targetContract` — if the challenge forks mainnet, exclude the forked address to save fuzzing budget.
+
+Common wins: accounting desync (`totalSupply != Σ balances`), `stake > 0 ⇒ unstakeable` violated after flashloan, ERC4626 `convertToAssets(convertToShares(x)) == x` only holds when fee = 0.
+
+## Halmos Symbolic-Execution Invariant Check
+
+**Trigger:** challenge contract has a bounded invariant you can assert but Foundry fuzzer times out on the state space.
+**Signals:** loop count ≤ 10, branching `if`/`require` under 20 constraints, no external `call` that Halmos can't model.
+**Mechanic:** `halmos --function check_invariant --loop 5` runs Z3-backed symbolic execution; it either proves the assertion or returns a counterexample. Unlike fuzzing, it enumerates reachable states; unlike full symbolic (Mythril), it scales to real contracts.
+
+```solidity
+// test/InvariantCheck.t.sol
+contract CheckTest {
+    Target t;
+    function check_totalSupplyMatches(uint256 a, uint256 b) public {
+        t.mint(address(this), a);
+        t.burn(b);
+        assert(t.totalSupply() == t.balanceOf(address(this)));
+    }
+}
+// Run: halmos --function check_totalSupplyMatches
+```
+
+`--symbolic-storage` makes initial contract storage symbolic (dangerous vs real constructor constraints) — useful when the CTF initial state is unknown.
+
+## Differential Fuzzing Two Implementations (source: 2024-2026 DeFi rewrite audits)
+
+**Trigger:** challenge provides a "reference" contract (audited) + an "optimised" one (assembly / Yul / modified math). They should behave identically on all inputs.
+**Signals:** two contracts with identical external interface; filename pairs `FooV1.sol` / `FooV2.sol` or `Safe.sol` / `Optimized.sol`.
+**Mechanic:** write a Foundry fuzz test that calls each with the same calldata and `assertEq` the full storage snapshot (or key return value). Any divergence is the bug — usually an overflow in the assembly path, or a missing check the optimised path skipped.
+
+```solidity
+function testDiff(bytes calldata input) public {
+    (bool o1, bytes memory r1) = address(v1).call(input);
+    (bool o2, bytes memory r2) = address(v2).call(input);
+    assertEq(o1, o2);
+    assertEq(keccak256(r1), keccak256(r2));
+}
+```
+
+## Cast + Tenderly Storage Diff for Private-State Leak
+
+**Trigger:** contract marks state `private` but challenge needs its value; live RPC endpoint provided.
+**Signals:** deployer visible on Etherscan; contract has unverified slots.
+**Mechanic:** `cast storage <addr> <slot>` reads any slot by index regardless of visibility. Slots are laid out per Solidity layout rules (`forge inspect Contract storage-layout`). For mapping entries: `slot = keccak256(abi.encode(key, mapping_slot))`. For arrays: `slot_i = keccak256(baseslot) + i`. Combined with a known deployer tx, `tenderly fork` reproduces the deploy state locally and `forge inspect` gives the layout. See `cves.md` for live examples.

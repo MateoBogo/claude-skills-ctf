@@ -275,7 +275,7 @@ void spawn_system_shell() {
 }
 ```
 
-## Workflow Root-Me WinKern
+## WinKern debug→exploit workflow (source: Root-Me WinKern SSH)
 
 ```
 1. Analyser le driver (.sys) avec IDA Pro ou Ghidra

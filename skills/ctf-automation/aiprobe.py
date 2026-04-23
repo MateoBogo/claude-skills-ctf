@@ -51,20 +51,80 @@ PROBES = [
      ["uid=", "ProxyCommand"]),
 ]
 
-def call(url, payload_key, body, headers, timeout):
+def build_payload(shape: str, field: str, model: str, body: str,
+                  history: list[dict] | None = None) -> dict:
+    """Shape the outgoing JSON for the target endpoint.
+       - raw:            {field: body}                                — custom apps
+       - openai-chat:    {model, messages:[... history..., {role,user,content}]}
+       - messages:       {messages:[...]}                             — Anthropic-style
+    """
+    if shape == "openai-chat":
+        msgs = list(history or [])
+        msgs.append({"role": "user", "content": body})
+        p = {"messages": msgs}
+        if model:
+            p["model"] = model
+        return p
+    if shape == "messages":
+        msgs = list(history or [])
+        msgs.append({"role": "user", "content": body})
+        return {"messages": msgs}
+    return {field: body}
+
+
+def extract_reply_text(shape: str, data: dict | str) -> str:
+    """Pull the assistant reply text out of the response body for history tracking."""
+    if isinstance(data, str):
+        return data
+    if not isinstance(data, dict):
+        return ""
+    if shape == "openai-chat":
+        try:
+            return data["choices"][0]["message"]["content"]
+        except Exception:
+            return ""
+    if shape == "messages":
+        try:
+            content = data["content"]
+            if isinstance(content, list) and content:
+                return content[0].get("text", "")
+            return str(content)
+        except Exception:
+            return ""
+    # raw — try common reply keys
+    for k in ("response", "reply", "output", "text", "message"):
+        if k in data and isinstance(data[k], str):
+            return data[k]
+    return ""
+
+
+def call(session, url, shape, field, model, body, headers, timeout,
+         history: list[dict] | None = None):
     t0 = time.time()
     try:
-        r = requests.post(url, headers=headers, json={payload_key: body}, timeout=timeout)
+        payload = build_payload(shape, field, model, body, history)
+        r = session.post(url, headers=headers, json=payload, timeout=timeout)
         dt = time.time() - t0
         text = r.text[:6000]
-        return {"status": r.status_code, "latency_s": round(dt, 3), "body_excerpt": text}
+        try:
+            data = r.json()
+        except Exception:
+            data = text
+        return {"status": r.status_code, "latency_s": round(dt, 3),
+                "body_excerpt": text, "parsed": data}
     except Exception as e:
         return {"error": str(e), "latency_s": round(time.time() - t0, 3)}
+
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("url")
-    ap.add_argument("--field", default="input", help="JSON field containing the user message")
+    ap.add_argument("--shape", choices=("raw", "openai-chat", "messages"),
+                    default="raw", help="endpoint wire format")
+    ap.add_argument("--field", default="input",
+                    help="JSON field for 'raw' shape")
+    ap.add_argument("--model", default="",
+                    help="model name for openai-chat shape (passthrough)")
     ap.add_argument("--auth", default="", help="Authorization header value")
     ap.add_argument("--timeout", type=float, default=30.0)
     ap.add_argument("--json", action="store_true")
@@ -72,15 +132,29 @@ def main():
     headers = {"Content-Type": "application/json"}
     if a.auth: headers["Authorization"] = a.auth
 
+    # Single Session → cookies/ETag/keep-alive carry across probes, which is
+    # what multi-turn probes (reverse_order primer → attack) need.
+    session = requests.Session()
+
     # Baseline latency
-    baseline = call(a.url, a.field, "hello", headers, a.timeout)
+    baseline = call(session, a.url, a.shape, a.field, a.model, "hello", headers, a.timeout)
+
     findings = []
+    history: list[dict] = []
     for name, body, indicators in PROBES:
-        res = call(a.url, a.field, body, headers, a.timeout)
-        excerpt = res.get("body_excerpt", "").lower()
+        # Feed prior assistant replies into shaped-history modes so the
+        # "reverse-order turn 3" probe sees the primer.
+        hist_for_call = history if a.shape in ("openai-chat", "messages") else None
+        res = call(session, a.url, a.shape, a.field, a.model, body, headers, a.timeout,
+                   history=hist_for_call)
+        reply = extract_reply_text(a.shape, res.get("parsed", res.get("body_excerpt", "")))
+        if a.shape in ("openai-chat", "messages"):
+            history.append({"role": "user", "content": body})
+            if reply:
+                history.append({"role": "assistant", "content": reply})
+        excerpt = (reply or res.get("body_excerpt", "")).lower()
         hits = [i for i in indicators if i.lower() in excerpt]
         suspicious = bool(hits)
-        # DNS rebind heuristic
         if name == "external_url_fetch":
             if res.get("latency_s", 0) > max(1.0, baseline.get("latency_s", 1.0) * 3):
                 suspicious = True
@@ -89,11 +163,12 @@ def main():
             "probe": name, "suspicious": suspicious, "indicators_hit": hits,
             "latency_s": res.get("latency_s"),
             "status": res.get("status"),
-            "excerpt": (res.get("body_excerpt", "") or "")[:400],
+            "excerpt": (reply or res.get("body_excerpt", "") or "")[:400],
         })
 
     report = {
         "endpoint": a.url,
+        "shape": a.shape,
         "baseline_latency_s": baseline.get("latency_s"),
         "findings": findings,
         "interesting": [f["probe"] for f in findings if f["suspicious"]],

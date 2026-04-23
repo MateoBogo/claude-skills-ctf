@@ -41,18 +41,35 @@ case "$EXT" in
     fi
     ;;
   cfile|iq|cu8|cs8|cs16|cf32)
-    # Treat as raw IQ. Convert to 22050 Hz mono WAV, then try multimon-ng modes.
+    # Raw IQ data = paired (I, Q) complex samples. Collapsing to mono via
+    # sox destroys phase → multimon never hits. Proper path is FM demod
+    # (`csdr fmdemod_quadri_cf`) or magnitude envelope (`csdr amdemod_cf`)
+    # BEFORE resampling to audio rate. We keep the sox path only as a
+    # magnitude-envelope approximation (remix 1,2 sums I+Q instead of
+    # dropping Q) and warn the user to use csdr/GNU Radio for real work.
+    cat >&2 <<EOF
+[foreniq] WARNING: raw IQ (.$EXT) needs a proper demod chain.
+  Recommended (FM/NFM, 250 kHz IQ @ 1024000 sps):
+    csdr convert_u8_f < "$F" | csdr fmdemod_quadri_cf | \\
+    csdr dc_block_ff | csdr fractional_decimator_ff \$((1024000/22050)) | \\
+    csdr convert_f_s16 | sox -t raw -r 22050 -c 1 -e signed-integer -b 16 - -t wav "${OUT}.wav"
+  Then:  multimon-ng -a $MODE -f alpha -t wav "${OUT}.wav"
+
+Falling back to sox magnitude-envelope approximation (often noisy):
+EOF
     if has sox; then
       # heuristic: .cu8 is unsigned 8-bit, .cs16 signed 16-bit; others => float32
+      # Use `remix -m 1,2` to sum I and Q channels → rough magnitude envelope
+      # (better than dropping Q silently).
       case "$EXT" in
-        cu8) sox -r "$FREQ" -c 2 -e unsigned-integer -b 8 -t raw "$F" -c 1 -t wav "${OUT}.wav" 2>/dev/null || true;;
-        cs8) sox -r "$FREQ" -c 2 -e signed-integer -b 8 -t raw "$F" -c 1 -t wav "${OUT}.wav" 2>/dev/null || true;;
-        cs16|iq) sox -r "$FREQ" -c 2 -e signed-integer -b 16 -t raw "$F" -c 1 -t wav "${OUT}.wav" 2>/dev/null || true;;
-        cf32|cfile) sox -r "$FREQ" -c 2 -e floating-point -b 32 -t raw "$F" -c 1 -t wav "${OUT}.wav" 2>/dev/null || true;;
+        cu8) sox -r "$FREQ" -c 2 -e unsigned-integer -b 8 -t raw "$F" -c 1 -t wav "${OUT}.wav" remix -m 1,2 2>/dev/null || true;;
+        cs8) sox -r "$FREQ" -c 2 -e signed-integer -b 8 -t raw "$F" -c 1 -t wav "${OUT}.wav" remix -m 1,2 2>/dev/null || true;;
+        cs16|iq) sox -r "$FREQ" -c 2 -e signed-integer -b 16 -t raw "$F" -c 1 -t wav "${OUT}.wav" remix -m 1,2 2>/dev/null || true;;
+        cf32|cfile) sox -r "$FREQ" -c 2 -e floating-point -b 32 -t raw "$F" -c 1 -t wav "${OUT}.wav" remix -m 1,2 2>/dev/null || true;;
       esac
       if [[ -f "${OUT}.wav" && -s "${OUT}.wav" ]] && has multimon-ng; then
         multimon-ng -a "$MODE" -f alpha -t wav "${OUT}.wav" > "${OUT}.decoded.txt" 2>&1 || true
-        echo "[*] multimon-ng($MODE) -> ${OUT}.decoded.txt"
+        echo "[*] multimon-ng($MODE) on envelope -> ${OUT}.decoded.txt"
       fi
     fi
     ;;

@@ -43,6 +43,11 @@ Dispatch on **observable artefacts**, not challenge titles.
 | LLM endpoint has a `fetch_*` / `read_*` tool without scheme allow-list | Agent file-read via `file://` in tool URL → ai-ml.md |
 | `.keras`/`.h5` config has `"class_name":"Lambda"` with base64 function | Marshal stego + `safe_mode=False` RCE → ai-ml.md |
 | `ast.literal_eval` consumer without `isinstance` check, downstream index-based access | Dict-for-list type confusion → pyjails.md |
+| MCP server (`@modelcontextprotocol/sdk`, `McpServer.registerTool`) with config/schema from writable source | Tool-definition poisoning → ai-ml.md#mcp-tool-definition-poisoning |
+| Agent ingests user images + emits text summary; no OCR filter mentioned | Image-OCR prompt injection → ai-ml.md#image-ocr-prompt-injection |
+| Shared repo + agent has Write/Edit tools + `CLAUDE.md` or `.github/workflows/*.yml` present | Agent self-persistence → ai-ml.md#agent-self-persistence |
+| Attachment > 64k tokens, single user turn, no retrieval (whole doc concatenated) | Haystack distraction injection → ai-ml.md#long-context-distraction |
+| Tool schema string field echoed into `subprocess`/`kubectl`/shell invocation | Agent tool-arg injection via environment echo → ai-ml.md#agent-tool-arg-injection |
 
 Recognize the **mechanic**. Names lie; bytes don't.
 

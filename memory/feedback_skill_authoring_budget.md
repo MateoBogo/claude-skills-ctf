@@ -2,6 +2,7 @@
 name: Skill authoring — respect token budgets
 description: Concrete token/line budgets and structure rules for Claude Code skills; learned 2026-04-22 after a too-heavy SKILL.md refactor
 type: feedback
+originSessionId: daf9c4c7-3d60-4a53-b955-e10096c45d3e
 ---
 Keep skills cheap to load. SKILL.md auto-loads on every invocation — treat it as always-in-context.
 

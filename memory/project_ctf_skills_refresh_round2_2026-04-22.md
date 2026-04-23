@@ -2,6 +2,7 @@
 name: CTF skills refresh round 2 (2026-04-22)
 description: Second-round enrichment adding ~55 mechanics-first techniques from SekaiCTF 2025/2026, DiceCTF 2026, idekCTF 2025, hxp 38C3/39C3, TFC CTF 2025, HTB Business/University 2025, pwn.college AoP 2025, ZK Hack V, FCSC 2025, Midnightflag 2025 — plus a new ctf-automation skill with 6 scripts
 type: project
+originSessionId: daf9c4c7-3d60-4a53-b955-e10096c45d3e
 ---
 On 2026-04-22, round 2 enrichment pass completed. Three research agents audited writeups the first pass did not cover; one audit agent validated mechanics-first compliance of the existing library.
 

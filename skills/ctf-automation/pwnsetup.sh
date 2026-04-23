@@ -32,7 +32,7 @@ if has readelf; then
   MACH=$(readelf -h "$BIN" 2>/dev/null | awk -F: '/Machine/ {print $2}' | xargs)
   case "$MACH" in
     *X86-64*|*x86-64*) ARCH="amd64";;
-    *80386*|*Intel 80386*) ARCH="i386";;
+    *80386*|*"Intel 80386"*) ARCH="i386";;
     *AArch64*)        ARCH="aarch64";;
     *ARM*)            ARCH="arm";;
   esac
@@ -50,10 +50,11 @@ if [[ -z "$LIBC_PATH" ]]; then
 fi
 if [[ -n "$LIBC_PATH" && -f "$LIBC_PATH" ]] && has curl; then
   echo "[*] libc.rip lookup for $LIBC_PATH"
-  # extract 4 common symbols -> offsets
+  # Extract 4 common symbol offsets from the dynsym table.
+  # readelf -Ws columns: Num Value Size Type Bind Vis Ndx Name ($4=Type, $8=Name)
   SYMS=""
   for s in puts printf read system __libc_start_main; do
-    off=$(readelf -a "$LIBC_PATH" 2>/dev/null | awk -v s="$s" '$8==s && $5 ~ /FUNC/ {print $2; exit}')
+    off=$(readelf -Ws "$LIBC_PATH" 2>/dev/null | awk -v s="$s" '$4=="FUNC" && $8==s {print $2; exit}')
     [[ -n "$off" ]] && SYMS+="\"$s\":\"0x$off\","
   done
   SYMS="{${SYMS%,}}"
@@ -78,14 +79,21 @@ TEMPLATE="$OUT/exploit.py"
 if [[ -f "$TEMPLATE" ]]; then
   echo "[!] $TEMPLATE exists — not overwriting"
 else
+  # Build Python-safe values: LIBC_PATH → quoted path or None; ARCH → '' when unknown (let pwntools infer).
+  if [[ -n "$LIBC_PATH" ]]; then PY_LIBC="\"$LIBC_PATH\""; else PY_LIBC="None"; fi
+  if [[ "$ARCH" == "unknown" || -z "$ARCH" ]]; then
+    PY_ARCH_LINE="# context.arch not auto-detected — set manually if needed"
+  else
+    PY_ARCH_LINE="context.arch = \"$ARCH\""
+  fi
   cat > "$TEMPLATE" <<PY
 #!/usr/bin/env python3
 from pwn import *
 
 BIN = "./${NAME}"
-LIBC_PATH = ${LIBC_PATH:+\"$LIBC_PATH\"}
+LIBC_PATH = ${PY_LIBC}
 context.binary = ELF(BIN)
-context.arch = "${ARCH}"
+${PY_ARCH_LINE}
 context.log_level = "info"
 
 def start(argv=[], *a, **kw):

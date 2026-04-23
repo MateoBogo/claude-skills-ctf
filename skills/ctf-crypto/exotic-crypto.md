@@ -270,3 +270,27 @@ which collapses the DH assumption. Generic recipe: always verify that the scheme
 **Signals:** `polyvec.h5`/`ciphertext.bin` + README citing NIST PQC round; or vinegar variables with explicit rank.
 **Mechanic:** Kyber path — decapsulation-failure oracle (Ravi et al.) or implicit-rejection timing. UOV path — rank analysis / MinRank over the central map; typically reduces recovery cost to `O(q^r)` with small `r`. Run Magma `MinRank` or Sage `HFE` helper.
 Source: [hackropole.fr/fr/fcsc2025/](https://hackropole.fr/fr/fcsc2025/).
+
+## Falcon Floating-Point Leakage on Sign Verification (source: 2025-era PQ CTFs, CCS 2024 Falcon papers)
+
+**Trigger:** Falcon-512 / Falcon-1024 signing or signature verification reachable; reference implementation uses `double` / `fpu` math; verifier bounds use `sqrt(norm2) < β`.
+**Signals:** `falcon-ref.c` compiled with `-lm`; signature pairs `(r, s)` emitted with varying `r`; check code calls `vrfy_norm2` or manipulates `int64_t` from `double`.
+**Mechanic:** the Falcon fast FP Gaussian sampler leaks via FP-rounding subnormals. Collect ~10^5 signatures; recover the signing key's secret lattice basis via `f, g, F, G` relations + Howgrave-Graham/learning-with-rounding CVP. Alternate path: if the verifier casts `double → int64_t` without explicit bound, mount an "off-by-eps" forgery where `norm2 = β²` boundary flips due to FP rounding — craft a signature whose FP norm is just under β but integer norm is over. Library: `pqs` + Sage prototype in CRYSTALS tools repo.
+
+## ML-DSA (Dilithium) Hint-Leak via Public-Key Compression (source: 2026 PQC challenges)
+
+**Trigger:** signature scheme is ML-DSA (NIST FIPS 204) or legacy Dilithium; challenge provides "hints" `h` alongside `(c, z)` triples.
+**Signals:** `h` has Hamming weight ≤ ω (80 for DILITHIUM2); parameters `(q, d, γ1, γ2)` match ML-DSA; a filter reveals `z` components bounded by `γ1 − β`.
+**Mechanic:** each hint bit reveals one parity of `HighBits(⟨a_i, y⟩ + c·s1)`. With enough signatures, build a lattice `B = [A | qI]` augmented by hint constraints; short-vector recovery via BKZ-40 exposes `s1`, then `s2` follows. For constrained-hint variants (force all hints to 0), the scheme collapses to an LWE instance with biased noise — solved by lattice + primal attack with effective dimension `n - ω`.
+
+## SLH-DSA (SPHINCS+) Signature-Stealing via Tree Reuse (source: 2026 PQC challenges)
+
+**Trigger:** SPHINCS+ or ML-DSA-derived stateful-ish signing with a bug that reuses the same FORS (Forest Of Random Subsets) instance twice.
+**Signals:** server stores a counter that can be replayed (file-based, not atomic); two signatures derivable from the same `(pk, idx)` with different messages.
+**Mechanic:** one-time-signatures in FORS guarantee security ONLY under single-use. If idx repeats, pair `(msg_1, sig_1)` and `(msg_2, sig_2)` together reveal enough tree leaves to forge a third signature on a chosen message. Equivalent HORS-then-WOTS attack exists in WOTS+ — signing two messages whose hashes share a prefix leaks chained WOTS nodes. Counter-grep: any filesystem-backed signer without atomic counter rename + `fsync` is vulnerable.
+
+## Invalid-Curve Attacks on Post-Quantum KEM Implementations (CSIDH / CTIDH)
+
+**Trigger:** isogeny-based KEM (CSIDH-512, CTIDH, SeaSign) with public key on attacker-supplied curve parameters.
+**Signals:** API accepts Montgomery `A`-coefficient directly; no twist-check; `class_group_action(A, k)` returns deterministically.
+**Mechanic:** send a CSIDH key on a twist / Fp-rational subgroup of smooth order. Deterministic action reveals `k mod ℓ_i` for each tiny prime `ℓ_i` via Pohlig-Hellman on the subgroup. Over ~200 queries, CRT-combine to full `k`. Defense: constant-time twist check (`A² - 4` square/non-square test) before every action.

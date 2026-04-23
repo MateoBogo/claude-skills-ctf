@@ -54,7 +54,29 @@ WEB_URLS=()
 JWT_FILES=()
 RAW_FLAG_HITS=0
 
-shopt -s globstar nullglob nocaseglob
+# Save shopt state so we don't pollute the caller's shell when sourced.
+_SAVED_SHOPT="$(shopt -p nullglob nocaseglob globstar 2>/dev/null || true)"
+shopt -s nullglob nocaseglob
+_restore_shopt() { eval "$_SAVED_SHOPT" 2>/dev/null || true; }
+trap _restore_shopt EXIT
+
+# Single tree pass for LLM/URL/JWT/flag hints — was N greps per file.
+AI_TREE_HITS=$(grep -rliE 'openai|anthropic|claude|chatgpt|langchain|llama|gemini|system.prompt|allow.?list.*tool' \
+  --include='*.py' --include='*.js' --include='*.ts' --include='*.json' --include='*.md' --include='*.txt' --include='*.html' \
+  "$DIR" 2>/dev/null | wc -l)
+TREE_URLS=$(grep -rhoE 'https?://[A-Za-z0-9._:/?&=%+#-]+' \
+  --include='*.py' --include='*.js' --include='*.ts' --include='*.json' --include='*.md' --include='*.txt' --include='*.html' \
+  "$DIR" 2>/dev/null | sort -u | head -20)
+TREE_JWT=$(grep -rlE 'eyJ[A-Za-z0-9_-]{10,}\.eyJ' \
+  --include='*.py' --include='*.js' --include='*.ts' --include='*.json' --include='*.md' --include='*.txt' --include='*.html' \
+  "$DIR" 2>/dev/null)
+TREE_FLAGS=$(grep -rlE '(CTF|flag|FLAG|HTB|picoCTF|ENO|TEAM|FCSC|404CTF|RM)\{' \
+  --include='*.py' --include='*.js' --include='*.ts' --include='*.json' --include='*.md' --include='*.txt' --include='*.html' \
+  "$DIR" 2>/dev/null | wc -l)
+AI_HINTS=$AI_TREE_HITS
+RAW_FLAG_HITS=$TREE_FLAGS
+while IFS= read -r url; do [[ -n "$url" ]] && WEB_URLS+=("$url"); done <<< "$TREE_URLS"
+while IFS= read -r jf;  do [[ -n "$jf"  ]] && JWT_FILES+=("$jf");  done <<< "$TREE_JWT"
 
 while IFS= read -r -d '' f; do
   b="$(basename "$f")"
@@ -87,15 +109,6 @@ while IFS= read -r -d '' f; do
     dockerfile)        DOCKERFILE=true;;
     docker-compose*)   COMPOSE=true;;
   esac
-  # Strings-based AI/LLM hints
-  if [[ "$lb" =~ \.(py|js|ts|json|md|txt|html)$ ]]; then
-    if grep -liE 'openai|anthropic|claude|chatgpt|langchain|llama|gemini|system.prompt|allow.?list.*tool' "$f" >/dev/null 2>&1; then
-      AI_HINTS=$((AI_HINTS+1))
-    fi
-    while IFS= read -r url; do WEB_URLS+=("$url"); done < <(grep -oE 'https?://[A-Za-z0-9._:/?&=%+#-]+' "$f" 2>/dev/null | head -5)
-    if grep -loE 'eyJ[A-Za-z0-9_-]{10,}\.eyJ' "$f" >/dev/null 2>&1; then JWT_FILES+=("$f"); fi
-    if grep -lE '(CTF|flag|FLAG|HTB|picoCTF|ENO)\{' "$f" >/dev/null 2>&1; then RAW_FLAG_HITS=$((RAW_FLAG_HITS+1)); fi
-  fi
 done < <(find "$DIR" -maxdepth 4 -type f -print0 2>/dev/null)
 
 # ELF / PE classification requires `file`
@@ -109,7 +122,8 @@ if has file; then
   done < <(find "$DIR" -maxdepth 4 -type f -size +100c -print0 2>/dev/null)
 fi
 
-shopt -u nocaseglob
+_restore_shopt
+trap - EXIT
 
 # ---- ELF fingerprinting ----
 ELF_DETAILS=()

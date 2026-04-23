@@ -2,6 +2,7 @@
 name: Skills must trigger on mechanics, not titles or keywords
 description: Core principle for how CTF skills and other pattern-based skills should be designed and invoked
 type: feedback
+originSessionId: 9d467641-4764-48fa-87e3-59464c21abb5
 ---
 Skills must be triggered by recognition of **mechanics / signals / patterns**, not by challenge titles, CTF names, or keyword matches.
 

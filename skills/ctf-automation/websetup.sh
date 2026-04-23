@@ -65,22 +65,36 @@ if has nuclei; then
   nuclei -silent -u "https://$HOST" -jsonl -o "$NUC" $TEMPLATES 2>/dev/null || true
 fi
 
-# Merge
+# Merge — one jq -n call with --slurpfile / --rawfile so each source is
+# loaded as a named JSON value. No stdin-juggling, no broken `inputs[]`.
 if has jq; then
-  jq -s '{
-    target: "'"$TARGET"'",
-    subs:   [inputs[0] // {}],
-    live:   inputs[1] // [],
-    urls:   inputs[2] // [],
-    ffuf:   inputs[3] // {},
-    nuclei: inputs[4] // []
-  }' \
-  <(has jq && jq -R -s 'split("\n")[:-1]' "$SUBS"   2>/dev/null || echo '[]') \
-  <(has jq && jq -s  '.'                    "$LIVE" 2>/dev/null || echo '[]') \
-  <(has jq && jq -R -s 'split("\n")[:-1]' "$URLS"   2>/dev/null || echo '[]') \
-  <(has jq && jq -s  '.'                    "$FUZZ" 2>/dev/null || echo '{}') \
-  <(has jq && jq -s  '.'                    "$NUC"  2>/dev/null || echo '[]') \
-  > "$MERGED" 2>/dev/null || cat "$LIVE" > "$MERGED"
+  SUBS_JSON="$OUTDIR/subs.json"
+  URLS_JSON="$OUTDIR/urls.json"
+  # text lists -> JSON arrays
+  jq -R -s 'split("\n") | map(select(length > 0))' "$SUBS" > "$SUBS_JSON" 2>/dev/null || echo '[]' > "$SUBS_JSON"
+  jq -R -s 'split("\n") | map(select(length > 0))' "$URLS" > "$URLS_JSON" 2>/dev/null || echo '[]' > "$URLS_JSON"
+  # httpx emits one JSON obj per line -> slurp into array
+  if [[ -s "$LIVE" ]]; then
+    jq -s '.' "$LIVE" > "$OUTDIR/live.slurp.json" 2>/dev/null || echo '[]' > "$OUTDIR/live.slurp.json"
+  else
+    echo '[]' > "$OUTDIR/live.slurp.json"
+  fi
+  if [[ ! -s "$FUZZ" ]]; then echo '{}' > "$FUZZ"; fi
+  if [[ ! -s "$NUC"  ]]; then echo '' > "$NUC"; fi
+
+  jq -n --arg target "$TARGET" \
+        --slurpfile subs "$SUBS_JSON" \
+        --slurpfile live "$OUTDIR/live.slurp.json" \
+        --slurpfile urls "$URLS_JSON" \
+        --slurpfile ffuf "$FUZZ" \
+        --rawfile   nuc  "$NUC" \
+        '{target: $target,
+          subs:   $subs[0],
+          live:   $live[0],
+          urls:   $urls[0],
+          ffuf:   ($ffuf[0] // {}),
+          nuclei: ($nuc | split("\n") | map(select(length > 0) | fromjson? // {}) )}' \
+        > "$MERGED" 2>/dev/null || cat "$LIVE" > "$MERGED"
 else
   echo "{\"target\":\"$TARGET\",\"outdir\":\"$OUTDIR\"}" > "$MERGED"
 fi
