@@ -1,6 +1,6 @@
 ---
 name: ctf-automation
-description: Orchestrator for CTF triage: fingerprint binaries, detect manifests (package.json/Cargo/go.mod/foundry.toml), find crypto/forensics/AI artefacts, emit JSON+markdown dispatch pointers into ctf-*/SKILL.md PRI. Bundles pwnsetup/cryptosetup/websetup/foreniq/aiprobe scripts.
+description: Orchestrator for CTF triage: fingerprint binaries, detect manifests (package.json/Cargo/go.mod/foundry.toml), find crypto/forensics/AI artefacts, emit JSON+markdown dispatch pointers into ctf-*/SKILL.md PRI. Bundles pwnsetup/cryptosetup/websetup/foreniq/aiprobe scripts. CTFd client (ctfd.py) for sync/triage/submit workflow.
 license: MIT
 compatibility: Requires bash, Python 3, jq. Optional: checksec, rabin2, patchelf, ffuf, httpx, katana, nuclei, subfinder, multimon-ng, sox, pulseview, sagemath. Missing-tool detection prints exact install command instead of crashing.
 allowed-tools: Bash Read Write Edit Glob Grep
@@ -46,6 +46,56 @@ Each script performs a `command -v` check for every external tool it uses. Missi
 - `websetup.sh` — chained recon: `subfinder` → `httpx` → `katana` → `ffuf` → `nuclei`, merges to single JSON
 - `foreniq.sh` — RF/audio/logic-analyzer pipeline: GQRX UDP / file → `sox` 22050Hz mono → `multimon-ng -a POCSAG512/1200/2400 -f alpha`; `.sr` files → `pulseview` CLI export
 - `aiprobe.py` — LLM endpoint auto-attack: argument injection on tool-allow-lists, DNS rebind, language-guardrail-gap, metadata exfil, reverse-order prompt, literal-policy flip. Emits finding JSON per attack.
+- `ctfd.py` — CTFd platform client: sync challenges + download files, run triage on workspace, submit flags, show progress, pick next challenge.
+
+## CTFd workflow (ctfd.py)
+
+Full competition workflow against any CTFd instance:
+
+```bash
+SKILLS=~/.claude/skills/ctf-automation
+
+# 1. init workspace (once per CTF)
+python3 $SKILLS/ctfd.py init \
+  --url https://ctf.example.com \
+  --token <your-api-token> \
+  --out ./workspace
+
+# 2. download all challenges + files
+python3 $SKILLS/ctfd.py sync --dir ./workspace
+
+# 3. fingerprint everything
+python3 $SKILLS/ctfd.py triage --dir ./workspace
+
+# 4. pick next target (lowest points first)
+python3 $SKILLS/ctfd.py next --dir ./workspace
+# → prints: Dir, connection info, triage hint
+
+# 5. work the challenge … find flag …
+
+# 6. submit
+python3 $SKILLS/ctfd.py submit "CTF{...}" --chal challenge-name --dir ./workspace
+
+# 7. loop back to step 4
+python3 $SKILLS/ctfd.py status --dir ./workspace
+```
+
+Workspace layout written by `sync`:
+```
+workspace/
+  .ctfd.json          ← config + challenge index
+  pwn/
+    heap-overflow/
+      vuln  libc.so.6 Dockerfile
+      .meta.json       ← id, pts, description, connection_info
+      .triage.json     ← from triage step
+      .solved          ← written on correct submit
+  web/
+    login-bypass/
+      ...
+```
+
+`next` sorts unsolved challenges by points (easiest first); filter by category with `--category pwn`.
 
 ## Pattern Recognition dispatch
 
