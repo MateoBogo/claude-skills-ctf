@@ -1,63 +1,100 @@
-# claude-skills-ctf
+<p align="center">
+  <img src="assets/cleave-banner.png" alt="CLEAVE - Skills-Based CTF Agents" width="100%">
+</p>
 
-Personal Claude Code skill library for CTF work (pwn / crypto / web / reverse / forensics / misc / OSINT / malware / app-system / automation) plus associated auto-memory.
+<h1 align="center">CLEAVE</h1>
 
-Built as a mechanics-first dispatch: every technique leads with an observable signal (binary artefacts, dependency manifests, protocol hints), never with the challenge title. SKILL.md files are lean dispatch tables (≤ 500 lines); quick-reference code and per-technique details live in support files loaded on demand.
+<p align="center">
+  <strong>Skills-Based CTF Agents</strong><br>
+  RECON &bull; ANALYZE &bull; ADAPT &bull; CLEAVE
+</p>
+
+CLEAVE is a mechanics-first skill framework for AI agents working CTF challenges.
+It routes from observable evidence to the right offensive-security technique:
+binary artefacts, dependency manifests, protocol hints, file signatures, challenge
+outputs, and exploit behavior. The goal is precise agent orchestration: inspect
+the signal, load only the relevant skill context, adapt the attack path, and cut
+through the challenge.
+
+The project includes CTF skills for pwn, crypto, web, reverse engineering,
+forensics, misc, OSINT, malware, app-system work, and automation, plus associated
+agent memory.
+
+## Agent Model
+
+- **Recon**: identify challenge signals before choosing a path.
+- **Analyze**: map evidence to narrow skill dispatch tables.
+- **Adapt**: load detailed support files only when the technique needs them.
+- **Cleave**: execute focused attack loops with minimal context noise.
+
+SKILL.md files stay lean and dispatch-oriented. Quick-reference code and
+per-technique detail live in support files loaded on demand.
 
 ## Layout
 
-```
+```text
+assets/
+  cleave-banner.png        # GitHub README header
+  cleave-logo-on-dark.png  # black-background logo variant
+  cleave-logo-on-light.png # light-background logo variant
 skills/
-  ctf-automation/   # triage.sh + per-category setup scripts (pwnsetup, cryptosetup, websetup, foreniq, aiprobe)
-  ctf-pwn/          # binary exploitation — classic → 2025-2026 era (split across -2.md / -3.md)
-  ctf-crypto/       # RSA, ECC, lattice, PQ, ZK
-  ctf-web/          # server-side, client-side, auth, web3 (split -advanced + -advanced-2.md, auth + auth-2.md)
-  ctf-reverse/      # static + dynamic + language-specific
-  ctf-forensics/    # disk, memory, network, signals, stego
-  ctf-misc/         # jails, encodings, RF, AI/ML/LLM exploits
-  ctf-malware/      # obfuscation, C2, PE/.NET
-  ctf-osint/        # geolocation, social, web/DNS
-  ctf-app-system/   # Root-Me SSH-only workflow (ELF x86/x64/ARM64, Windows kernel)
+  ctf-automation/          # triage.sh + per-category setup scripts
+  ctf-pwn/                 # binary exploitation
+  ctf-crypto/              # RSA, ECC, lattice, PQ, ZK
+  ctf-web/                 # server-side, client-side, auth, web3
+  ctf-reverse/             # static + dynamic + language-specific reversing
+  ctf-forensics/           # disk, memory, network, signals, stego
+  ctf-misc/                # jails, encodings, RF, AI/ML/LLM exploits
+  ctf-malware/             # obfuscation, C2, PE/.NET
+  ctf-osint/               # geolocation, social, web/DNS
+  ctf-app-system/          # Root-Me SSH-only workflow and system targets
 memory/
-  MEMORY.md                          # index
-  feedback_skill_authoring_budget.md # < 500 lines / < 2.5k tok per SKILL.md
-  feedback_skill_triggering_by_mechanics.md
-  feedback_ctf_writeup_patterns.md
-  project_*.md                       # session artefacts (research passes, lessons)
-install.sh                           # bootstrap a new machine (symlinks into ~/.claude)
+  MEMORY.md                # index
+  feedback_*.md            # skill authoring and triggering rules
+  project_*.md             # research passes, lessons, and session artefacts
+install.sh                 # bootstrap symlinks into ~/.claude
 ```
 
-## Install on a new machine
+## Install
 
 ```bash
-git clone git@github.com:MateoBogo/claude-skills-ctf.git ~/claude-skills-ctf
-bash ~/claude-skills-ctf/install.sh
+git clone git@github.com:MateoBogo/claude-skills-ctf.git ~/cleave
+bash ~/cleave/install.sh
 ```
 
-The install script symlinks every `skills/ctf-*` directory into `~/.claude/skills/` and every `memory/*.md` file into the active Claude Code project memory dir (default `~/.claude/projects/-home-ubuntu/memory/`). Re-run it any time the set of files changes.
+The install script symlinks every `skills/ctf-*` directory into
+`~/.claude/skills/` and every `memory/*.md` file into the active Claude Code
+project memory directory. Re-run it any time the set of files changes.
 
-## Working loop
+## Working Loop
 
-1. Edit skills in-place (symlinks keep everything live under `~/.claude/skills/ctf-*`).
-2. `cd ~/claude-skills-ctf && git status` → commit & push from the repo root.
-3. On the other machine: `git pull` → next Claude Code session already has the updates.
+1. Edit skills in place. Symlinks keep everything live under
+   `~/.claude/skills/ctf-*`.
+2. Run `bash skills/ctf-automation/triage.sh <challenge-dir>` to generate a
+   signal-first challenge summary.
+3. Commit and push from the CLEAVE repository root.
+4. On another machine, run `git pull` and then re-run `bash install.sh`.
 
-## Rules when adding techniques
+## Skill Authoring Rules
 
-See `memory/feedback_skill_authoring_budget.md` and `memory/feedback_skill_triggering_by_mechanics.md`. In short:
+See `memory/feedback_skill_authoring_budget.md` and
+`memory/feedback_skill_triggering_by_mechanics.md`. In short:
 
-- Every section leads with `Trigger:` / `Signals:` / `Pattern:` — observable only. Challenge name is a parenthetical source, never the dispatch hook.
-- Never put code in SKILL.md; put it in the support file or `quickref.md`.
-- Add ONE row per technique to `SKILL.md#pattern-recognition-index`.
-- Support file > ~500 lines → spin off `-N.md` sibling (era boundary usually works: pre-2024 / 2024 / 2025-2026).
+- Every section leads with `Trigger:`, `Signals:`, or `Pattern:`.
+- Dispatch hooks must be observable. Challenge names are references, not routing
+  keys.
+- Keep code out of `SKILL.md`; put code in support files or `quickref.md`.
+- Add one row per technique to `SKILL.md#pattern-recognition-index`.
+- If a support file grows past roughly 500 lines, split it into a sibling file.
 
-## Run the triage entrypoint
+## Triage Entrypoint
 
 ```bash
 bash skills/ctf-automation/triage.sh <challenge-dir>
 ```
 
-Writes `<dir>/.ctf-triage.{json,md}` pointing straight into the right `SKILL.md#pattern-recognition-index` rows.
+The command writes `<dir>/.ctf-triage.json` and `<dir>/.ctf-triage.md`, pointing
+the agent straight into the relevant `SKILL.md#pattern-recognition-index` rows.
 
 ## License
 
