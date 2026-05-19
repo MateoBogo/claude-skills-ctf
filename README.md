@@ -58,7 +58,7 @@ install.sh                 # bootstrap symlinks into ~/.claude
 ## Install
 
 ```bash
-git clone git@github.com:MateoBogo/claude-skills-ctf.git ~/cleave
+git clone git@github.com:MateoBogo/CLEAVE.git ~/cleave
 bash ~/cleave/install.sh
 ```
 
